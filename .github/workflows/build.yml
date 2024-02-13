@@ -1,4 +1,4 @@
-name: Test
+name: Build
 
 on:
   push:
@@ -16,9 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set Default Image Tag
+        run: echo "IMAGE_TAG=${{ inputs.image_tag || '1.4.1346' }}" >> $GITHUB_ENV
+
       - name: Download hermes.jar
         run: |
-          curl -o hermes.jar https://github.com/wardle/hermes/releases/download/v${{ inputs.image_tag }}/hermes-${{ inputs.image_tag }}.jar
+          curl -o hermes.jar https://github.com/wardle/hermes/releases/download/v${IMAGE_TAG}/hermes-${IMAGE_TAG}.jar
 
       - uses: DeLaGuardo/setup-clojure@master
         with:
@@ -70,7 +73,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t cortexcr.azurecr.io/cortex-x/hermes:v${{ inputs.image_tag }} \
+          docker build -t cortexcr.azurecr.io/cortex-x/hermes:v${IMAGE_TAG} \
             --build-arg hermes_jar=./hermes.jar \
             --build-arg snomed_db=./snomed.db \
             .

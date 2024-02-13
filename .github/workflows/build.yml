@@ -1,0 +1,76 @@
+name: Test
+
+on:
+  push:
+    branches: [cortex-main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Ex. 1.4.1346"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download hermes.jar
+        run: |
+          curl -o hermes.jar https://github.com/wardle/hermes/releases/download/v${{ inputs.image_tag }}/hermes-${{ inputs.image_tag }}.jar
+
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          cli: latest
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/deps.edn') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Install dependencies
+        run: clojure -P -M:test
+
+      - name: Create MLDS Password
+        run: |
+          echo ${{ secrets.MLDS_PASSWORD }} > mlds-password.txt
+
+      - name: Download latest SnomedCT and build database
+        run: |
+          clojure -M:run --db snomed.db install ihtsdo.mlds/167 --password mlds-password.txt --username ${{ secrets.MLDS_USERNAME }}
+
+      - name: Index SnomedCT database
+        run: |
+          clojure -M:run --db snomed.db index
+      
+      - name: Compact SnomedCT database
+        run: |
+          clojure -M:run --db snomed.db compact
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+
+      - name: Login to main Docker registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.MAIN_REGISTRY || 'cortexcr.azurecr.io' }}
+          username: ${{ vars.MAIN_REGISTRY_CLIENT_ID }}
+          password: ${{ secrets.MAIN_REGISTRY_CLIENT_SECRET }}
+
+      - name: Build image
+        run: |
+          docker build -t cortexcr.azurecr.io/cortex-x/hermes:v${{ inputs.image_tag }} \
+            --build-arg hermes_jar=./hermes.jar \
+            --build-arg snomed_db=./snomed.db \
+            .

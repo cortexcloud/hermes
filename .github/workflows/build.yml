@@ -76,4 +76,5 @@ jobs:
           docker build -t cortexcr.azurecr.io/cortex-x/hermes:v${IMAGE_TAG} \
             --build-arg hermes_jar=./hermes.jar \
             --build-arg snomed_db=./snomed.db \
+            --push \
             .

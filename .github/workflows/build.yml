@@ -41,7 +41,7 @@ jobs:
 
       - name: Build uber jar
         run: |
-          clj -T:build uber
+          clojure -T:build uber
           cp target/hermes-*.jar hermes.jar
           
       - name: Create MLDS Password

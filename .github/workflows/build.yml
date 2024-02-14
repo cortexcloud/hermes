@@ -19,10 +19,6 @@ jobs:
       - name: Set Default Image Tag
         run: echo "IMAGE_TAG=${{ inputs.image_tag || '1.4.1346' }}" >> $GITHUB_ENV
 
-      - name: Download hermes.jar
-        run: |
-          curl -o hermes.jar https://github.com/wardle/hermes/releases/download/v${IMAGE_TAG}/hermes-${IMAGE_TAG}.jar
-
       - uses: DeLaGuardo/setup-clojure@master
         with:
           cli: latest
@@ -43,6 +39,11 @@ jobs:
       - name: Install dependencies
         run: clojure -P -M:test
 
+      - name: Build uber jar
+        run: |
+          clj -T:build uber
+          cp target/hermes-*.jar hermes.jar
+          
       - name: Create MLDS Password
         run: |
           echo ${{ secrets.MLDS_PASSWORD }} > mlds-password.txt

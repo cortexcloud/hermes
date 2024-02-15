@@ -1,4 +1,4 @@
-FROM amazoncorretto:11-alpine-jdk
+FROM amazoncorretto:17-alpine-jdk
 ARG hermes_jar
 ARG snomed_db
 ENV port 8080

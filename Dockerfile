@@ -1,4 +1,5 @@
-FROM amazoncorretto:17-alpine-jdk
+FROM sapmachine:17-jdk-ubuntu-22.04
+
 ARG hermes_jar
 ARG snomed_db
 ENV port 8080
